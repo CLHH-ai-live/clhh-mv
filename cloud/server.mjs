@@ -971,7 +971,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname.startsWith("/web/")) {
       const name = url.pathname.slice(5);
-      if (!["bootstrap.js", "web.css", "billing.js"].includes(name))
+      if (!["start.js", "bootstrap.js", "web.css", "billing.js"].includes(name))
         return json(res, 404, { error: "Not found" });
       return stream(
         res,

@@ -54,8 +54,15 @@ for (const a of adapters)
   replace(a.start, a.end, fs.readFileSync(path.join(cloud, a.file), "utf8"));
 code = code.replace(
   "const q0=Op(()=>({getItem:()=>null,setItem:()=>{},removeItem:()=>{}}))",
-  "const q0=Op(()=>localStorage)",
+  "const q0=Op(()=>window.CLHH_WEB.storage)",
 );
+for (const [before, after] of [
+  ["getStorage:()=>localStorage", "getStorage:()=>window.CLHH_WEB.storage"],
+  ["storage:Op(()=>localStorage)", "storage:Op(()=>window.CLHH_WEB.storage)"],
+]) {
+  if (!code.includes(before)) throw new Error("Missing browser storage adapter boundary");
+  code = code.replace(before, after);
+}
 const desktopSettings = fs
   .readFileSync(
     path.join(root, "renderer/components/settings-panel.js"),
@@ -89,7 +96,7 @@ const html = fs
   .readFileSync(path.join(target, "index.html"), "utf8")
   .replace(
     '<script type="module" crossorigin src="./assets/index.js"></script>',
-    '<script type="module" src="/web/bootstrap.js"></script>',
+    '<script type="module" src="/web/start.js"></script>',
   );
 fs.writeFileSync(path.join(target, "index.html"), html);
 console.log("Built native browser interface and private background engine.");

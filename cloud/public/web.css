@@ -168,3 +168,7 @@
 .web-order-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 #web-wallet .web-order-actions button { padding: 8px 12px; font-size: 14px; }
 @media (max-width: 650px) { .web-order-row { grid-template-columns: minmax(0,1fr) auto; } .web-order-actions { grid-column: 1 / -1; } }
+#web-startup { position: fixed; z-index: 20000; inset: 50% auto auto 50%; transform: translate(-50%,-50%); width: min(420px,90vw); padding: 28px; border: 1px solid #91aaca; border-radius: 20px; background: #142035f5; color: #e6eef8; font: 16px system-ui,sans-serif; box-shadow: 0 20px 70px #0008; }
+#web-startup h2 { margin: 0 0 16px; }
+#web-startup button { padding: 10px 20px; border: 0; border-radius: 9px; background: #c7dcf8; color: #142035; cursor: pointer; }
+#web-startup button[hidden] { display: none; }

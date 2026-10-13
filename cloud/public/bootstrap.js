@@ -1,3 +1,17 @@
+// Workbench persistence is tab-local; only explicit saves reach the account's cloud state.
+const tabValues = new Map();
+const localStorage = {
+  getItem: (key) => tabValues.get(key) ?? null,
+  setItem: (key, value) => {
+    tabValues.set(key, String(value));
+    if (storageKeys.includes(key) && !hydrating) {
+      clearTimeout(pendingSave);
+      pendingSave = setTimeout(() => save().catch(console.error), 350);
+    }
+  },
+  removeItem: (key) => tabValues.delete(key),
+};
+window.CLHH_BOOT?.update("正在读取账号…");
 import { installBilling } from "/web/billing.js";
 const response = await fetch("/api/me");
 if (!response.ok) {
@@ -23,7 +37,8 @@ window.fetch = (input, options = {}) => {
 };
 
 const cache = new Map(),
-  uploads = new WeakMap();
+  uploads = new WeakMap(),
+  assetLoads = new Map();
 let store,
   pendingSave,
   hydrating = true;
@@ -63,7 +78,9 @@ function ref(slot) {
 async function loadAsset(item) {
   const id = item.id || item.cachePath?.replace("/assets/", "");
   if (cache.has(id)) return cache.get(id);
-  const r = await fetch("/api/assets/" + encodeURIComponent(id));
+  if (assetLoads.has(id)) return assetLoads.get(id);
+  const task = (async () => {
+  const r = await fetch("/api/assets/" + encodeURIComponent(id), { signal: AbortSignal.timeout(90000) });
   if (!r.ok) throw new Error("素材文件不存在");
   const file = new File([await r.blob()], item.name, {
     type: item.mime || r.headers.get("content-type"),
@@ -77,6 +94,9 @@ async function loadAsset(item) {
   };
   cache.set(id, slot);
   return slot;
+  })();
+  assetLoads.set(id, task);
+  try { return await task; } finally { assetLoads.delete(id); }
 }
 async function asset(slot) {
   if (!slot) return null;
@@ -291,6 +311,7 @@ window.require = (name) => {
 };
 const web = (window.CLHH_WEB = {
   api,
+  storage: localStorage,
   asset,
   cached: (item) =>
     cache.get(item.id || item.cachePath?.replace("/assets/", "")) || null,
@@ -350,30 +371,32 @@ async function save() {
   }
   await api("/api/state", { method: "PUT", body: state });
 }
-const originalSet = Storage.prototype.setItem;
-Storage.prototype.setItem = function (key, value) {
-  originalSet.call(this, key, value);
-  if (this === localStorage && storageKeys.includes(key) && !hydrating) {
-    clearTimeout(pendingSave);
-    pendingSave = setTimeout(() => save().catch(console.error), 350);
-  }
-};
+window.CLHH_BOOT?.update("正在恢复工作台…");
 const persisted = await api("/api/state");
 persisted["rh-simple-tool-settings"] ??= { state: {}, version: 0 };
 persisted["rh-simple-tool-settings"].state.resultFolder = "/results";
 for (const key of storageKeys) {
   localStorage.removeItem(key);
   if (persisted[key])
-    originalSet.call(localStorage, key, JSON.stringify(persisted[key]));
+    localStorage.setItem(key, JSON.stringify(persisted[key]));
 }
 const panels = persisted["rh-simple-tool-settings"]?.state?.panels || [];
-for (const panel of panels)
-  for (const key of ["image1", "audio", "audioSource"])
-    if (panel[key])
-      try {
-        await loadAsset(panel[key]);
-      } catch {}
-await refreshFiles();
+const assets = [...new Map(panels.flatMap(panel =>
+  ["image1", "audio", "audioSource"].map(key => panel[key]).filter(Boolean)
+).map(item => [item.id || item.cachePath, item])).values()];
+let loaded = 0;
+const pendingAssets = [...assets];
+await Promise.all(Array.from({ length: Math.min(4, assets.length) }, async () => {
+  while (pendingAssets.length) {
+    const item = pendingAssets.shift();
+    window.CLHH_BOOT?.update(`正在恢复素材 ${loaded}/${assets.length}…`);
+    try { await loadAsset(item); } catch { /* Missing assets remain replaceable in the workbench. */ }
+    loaded++;
+  }
+}));
+// Result listing is optional for first paint and must not block the editor.
+void refreshFiles().catch(() => {});
+window.CLHH_BOOT?.update("正在打开工作台…");
 const appliedJobs = new Map();
 async function pollJobs() {
   try {

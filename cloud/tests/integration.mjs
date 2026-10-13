@@ -393,6 +393,7 @@ try {
     try {
       const context = await browser.newContext({ acceptDownloads: true }),
         page = await context.newPage();
+      page.setDefaultTimeout(15000);
       const errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
       await page.goto(origin);
@@ -410,6 +411,35 @@ try {
         .getByRole("button", { name: "注册 / 登录", exact: true })
         .click();
       await page.getByTitle("我的视频", { exact: true }).waitFor();
+      // A second tab must render while its optional file listing is stalled.
+      await page.evaluate(() => window.CLHH_WEB.storage.setItem("tab-test", "first"));
+      const secondTab = await context.newPage();
+      let releaseListing;
+      const listingGate = new Promise(resolve => { releaseListing = resolve; });
+      await secondTab.route("**/api/files", async route => {
+        await listingGate;
+        await route.continue().catch(() => {});
+      });
+      try {
+        await secondTab.goto(origin);
+        await secondTab.getByTitle("我的视频", { exact: true }).waitFor({ timeout: 10000 });
+        assert.equal(await secondTab.locator("#web-startup").count(), 0);
+        assert.equal(await secondTab.evaluate(() => window.CLHH_WEB.storage.getItem("tab-test")), null);
+        await secondTab.evaluate(() => window.CLHH_WEB.storage.setItem("tab-test", "second"));
+        assert.equal(await page.evaluate(() => window.CLHH_WEB.storage.getItem("tab-test")), "first");
+      } finally { releaseListing(); await secondTab.close(); }
+      const failedTab = await context.newPage();
+      await failedTab.route("**/api/state", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "test startup failure" }) }));
+      await failedTab.goto(origin);
+      await failedTab.getByText("工作台加载失败，请检查网络后重试。", { exact: true }).waitFor();
+      assert.equal(await failedTab.getByRole("button", { name: "重新加载", exact: true }).isVisible(), true);
+      await failedTab.unroute("**/api/state");
+      await failedTab.getByRole("button", { name: "重新加载", exact: true }).click();
+      await failedTab.getByTitle("我的视频", { exact: true }).waitFor();
+      await failedTab.close();
+      await page.bringToFront();
+      console.log("Second-tab storage isolation, stalled file listing and startup error recovery passed.");
+
       await page.getByTitle("设置", { exact: true }).click();
       const settings = page.getByRole("dialog", { name: "设置", exact: true });
       assert.equal(
@@ -513,6 +543,10 @@ try {
       console.log(
         "Browser OTP registration, preview/seek/download, charge confirmation and QR top-up passed.",
       );
+    } catch (error) {
+      for (const c of browser.contexts()) for (const p of c.pages())
+        await p.screenshot({ path: path.join(temp, "browser-failure.png") }).catch(() => {});
+      throw error;
     } finally {
       await browser.close();
     }
