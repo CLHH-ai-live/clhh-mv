@@ -106,3 +106,8 @@ button:disabled {
   opacity: 0.6;
   cursor: wait;
 }
+
+[hidden] { display: none !important; }
+.login-methods { display: flex; gap: 8px; margin: 20px 0; }
+.login-methods button { font-size: 14px; }
+.login-methods button[aria-pressed="false"] { background: #152238; color: #b3c4da; border-color: #50627d; }

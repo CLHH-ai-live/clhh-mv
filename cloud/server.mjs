@@ -509,6 +509,8 @@ const server = http.createServer(async (req, res) => {
       const allowed = [
         "/api/auth/email-otp/send-verification-otp",
         "/api/auth/sign-in/email-otp",
+        "/api/auth/phone-number/send-otp",
+        "/api/auth/phone-number/verify",
         "/api/auth/sign-out",
         "/api/auth/get-session",
       ];
@@ -536,7 +538,7 @@ const server = http.createServer(async (req, res) => {
     const signed = await auth.api.getSession({
       headers: fromNodeHeaders(req.headers),
     });
-    const session = signed?.user.emailVerified
+    const session = signed && (signed.user.emailVerified || (signed.user.phoneNumberVerified && signed.user.phoneNumber))
       ? {
           user: { ...signed.user, username: signed.user.id },
           csrf: crypto
@@ -563,7 +565,8 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === "/api/me")
       return json(res, 200, {
         username: user.username,
-        email: user.email,
+        email: user.emailVerified ? user.email : null,
+        phoneNumber: user.phoneNumberVerified ? user.phoneNumber : null,
         name: user.name,
         csrf: session.csrf,
       });

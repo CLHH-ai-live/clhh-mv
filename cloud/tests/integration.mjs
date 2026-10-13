@@ -51,6 +51,13 @@ const fixture = http.createServer(async (req, res) => {
     res.end();
     return;
   }
+  if (req.url === "/sms") {
+    const sms = JSON.parse(body);
+    codes.set(sms.PhoneNumberSet[0], sms.TemplateParamSet[0]);
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify({ SendStatusSet: [{ Code: "Ok" }] }));
+    return;
+  }
   if (req.url === "/email") {
     const mail = JSON.parse(body);
     codes.set(mail.to[0], /验证码是 (\d{6})/.exec(mail.text)[1]);
@@ -125,6 +132,11 @@ fs.writeFileSync(
   Object.entries({
     BETTER_AUTH_SECRET: "integration-secret-at-least-32-characters",
     RESEND_API_KEY: "mock",
+    TENCENT_SMS_SECRET_ID: "mock",
+    TENCENT_SMS_SECRET_KEY: "mock",
+    TENCENT_SMS_SDK_APP_ID: "mock",
+    TENCENT_SMS_SIGN_NAME: "mock",
+    TENCENT_SMS_TEMPLATE_ID_LOGIN: "mock",
     AUTH_EMAIL_FROM: "test@example.test",
     PUBLIC_ORIGIN: origin,
     PAY_SERVICE_URL: fixtureURL,
@@ -460,6 +472,26 @@ try {
         .waitFor({ timeout: 15000 });
       assert.deepEqual(errors, []);
       await page.screenshot({ path: path.join(temp, "wallet-browser.png") });
+      const phoneContext = await browser.newContext();
+      const phonePage = await phoneContext.newPage();
+      await phonePage.goto(origin);
+      await phonePage.getByRole("button", { name: "手机登录", exact: true }).click();
+      await phonePage.getByLabel("手机号（+86）", { exact: true }).fill("13800138000");
+      await phonePage.getByRole("button", { name: "获取验证码", exact: true }).click();
+      await phonePage.getByText("验证码已发送，请查收短信（有效期 5 分钟）。", { exact: true }).waitFor();
+      await phonePage.getByLabel("验证码", { exact: true }).fill(codes.get("+8613800138000"));
+      await phonePage.getByRole("button", { name: "注册 / 登录", exact: true }).click();
+      await phonePage.getByTitle("我的视频", { exact: true }).waitFor();
+      const phoneMe = await phonePage.evaluate(() => fetch("/api/me").then(r => r.json()));
+      assert.equal(phoneMe.phoneNumber, "+8613800138000");
+      assert.equal(phoneMe.email, null);
+      const phoneWallet = await phonePage.evaluate(() => fetch("/api/billing/wallet").then(r => r.json()));
+      assert.equal(phoneWallet.balanceUnits, 0);
+      const otherUserMedia = await phoneContext.request.get(origin + "/api/download?path=" + encodeURIComponent(merged.relative));
+      assert.notEqual(otherUserMedia.status(), 200);
+      await phonePage.screenshot({ path: path.join(temp, "phone-browser.png") });
+      await phoneContext.close();
+      console.log("Browser phone OTP registration and verified-phone session access passed.");
       console.log(
         "Browser OTP registration, preview/seek/download, charge confirmation and QR top-up passed.",
       );

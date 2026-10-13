@@ -11,8 +11,13 @@
       <form id="login">
         <div class="brand">CLHH</div>
         <h1>MV 创作</h1>
-        <p>邮箱验证后登录，首次使用自动注册。</p>
-        <label
+        <p>验证码登录，首次使用自动注册。</p>
+        <div class="login-methods" role="group" aria-label="登录方式">
+          <button type="button" data-method="email" aria-pressed="true">邮箱登录</button>
+          <button type="button" data-method="phone" aria-pressed="false">手机登录</button>
+        </div>
+        <label id="phone-field" hidden>手机号（+86）<input name="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="中国大陆手机号" maxlength="20" required disabled /></label>
+        <label id="email-field"
           >邮箱<input
             name="email"
             type="email"

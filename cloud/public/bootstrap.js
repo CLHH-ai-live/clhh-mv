@@ -431,7 +431,7 @@ await import("/assets/index.js");
 const observer = new MutationObserver(() => {
   const close = document.querySelector('button[title="关闭"]');
   if (close) {
-    close.title = "退出账号：" + me.email;
+    close.title = "退出账号：" + (me.phoneNumber || me.email);
     close.setAttribute("aria-label", "退出账号");
   }
 });

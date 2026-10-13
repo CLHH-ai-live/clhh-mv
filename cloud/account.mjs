@@ -1,8 +1,10 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import { emailOTP } from "better-auth/plugins";
+import { emailOTP, phoneNumber } from "better-auth/plugins";
+import { createAuthMiddleware } from "better-auth/api";
+import { createSmsSender, normalizePhoneNumber, isSupportedPhoneNumber } from "./sms.mjs";
 import * as schema from "./schema.mjs";
-export function createAuth({ db, config, sendEmail }) {
+export function createAuth({ db, config, sendEmail, sendSms }) {
   if (!config.BETTER_AUTH_SECRET || config.BETTER_AUTH_SECRET.length < 32)
     throw new Error("Configure BETTER_AUTH_SECRET (32+ characters)");
   const deliver =
@@ -27,6 +29,12 @@ export function createAuth({ db, config, sendEmail }) {
       if (!response.ok) throw new Error("验证码发送失败，请稍后再试");
     };
   return betterAuth({
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path.startsWith("/phone-number/") && ctx.body?.phoneNumber)
+          ctx.body.phoneNumber = normalizePhoneNumber(ctx.body.phoneNumber);
+      }),
+    },
     appName: "CLHH MV 创作",
     baseURL: config.PUBLIC_ORIGIN,
     secret: config.BETTER_AUTH_SECRET,
@@ -47,10 +55,23 @@ export function createAuth({ db, config, sendEmail }) {
       max: 30,
       customRules: {
         "/email-otp/send-verification-otp": { window: 60, max: 3 },
+        "/phone-number/send-otp": { window: 60, max: 3 },
+        "/phone-number/verify": { window: 60, max: 5 },
         "/sign-in/email-otp": { window: 60, max: 5 },
       },
     },
     plugins: [
+      phoneNumber({
+        otpLength: 6,
+        expiresIn: 300,
+        allowedAttempts: 3,
+        phoneNumberValidator: isSupportedPhoneNumber,
+        sendOTP: sendSms || createSmsSender(config),
+        signUpOnVerification: {
+          getTempEmail: (phone) => `${phone.replace(/\D/g, "")}@phone.clhh.local`,
+          getTempName: (phone) => phone,
+        },
+      }),
       emailOTP({
         otpLength: 6,
         expiresIn: 300,

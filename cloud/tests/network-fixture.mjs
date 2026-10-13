@@ -7,3 +7,12 @@ globalThis.fetch = (url, options) =>
       : url,
     options,
   );
+
+// Replace only the SDK transport in this explicitly loaded test process.
+import sdk from "tencentcloud-sdk-nodejs-sms";
+sdk.sms.v20210111.Client.prototype.SendSms = async (params) => {
+  const response = await original(process.env.CLHH_FIXTURE_URL + "/sms", {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(params),
+  });
+  return response.json();
+};
