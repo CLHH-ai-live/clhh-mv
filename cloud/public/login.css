@@ -97,11 +97,7 @@ button:focus-visible {
   padding: 12px;
   margin: 0;
 }
-.price-note {
-  font-size: 12px !important;
-  line-height: 1.8 !important;
-  color: #9aacc4 !important;
-}
+
 button:disabled {
   opacity: 0.6;
   cursor: wait;

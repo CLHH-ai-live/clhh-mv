@@ -21,6 +21,8 @@ for (const key of [
   "PAY_SERVICE_APP_SECRET",
 ])
   if (!config[key]) throw new Error("Missing " + key);
+if (/\\u[0-9a-f]{4}/i.test(config.TENCENT_SMS_SIGN_NAME || ""))
+  throw new Error("TENCENT_SMS_SIGN_NAME must contain literal UTF-8 characters, not escaped Unicode");
 fs.mkdirSync(dest, { recursive: true, mode: 0o700 });
 fs.writeFileSync(
   path.join(dest, "service.env"),

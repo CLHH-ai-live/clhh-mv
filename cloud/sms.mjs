@@ -34,7 +34,10 @@ export function createSmsSender(config, Client = sdk.sms.v20210111.Client) {
       const status = result.SendStatusSet?.[0];
       if (status?.Code !== "Ok") throw new Error(status?.Code || "SMS_FAILED");
     } catch (error) {
-      const limited = String(error.code || error.message).startsWith("LimitExceeded.");
+      const providerCode = String(error.code || error.message);
+      // Keep provider diagnostics without logging phone numbers, OTPs or credentials.
+      console.warn("SMS delivery failed:", /^[A-Za-z][A-Za-z0-9_.]{0,100}$/.test(providerCode) ? providerCode : "TRANSPORT_ERROR");
+      const limited = providerCode.startsWith("LimitExceeded.");
       throw APIError.from(limited ? "TOO_MANY_REQUESTS" : "BAD_GATEWAY", {
         code: limited ? "PHONE_DAILY_LIMIT" : "FAILED_TO_SEND_OTP",
         message: limited ? "短信发送次数已达限制，请稍后再试" : "短信发送失败，请稍后重试",
