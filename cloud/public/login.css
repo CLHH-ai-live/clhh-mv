@@ -1,0 +1,108 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #101725;
+  color: #e6eef8;
+  font-family:
+    system-ui,
+    -apple-system,
+    "PingFang SC",
+    sans-serif;
+}
+main {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(ellipse at 20% 15%, #293d60, transparent 55%),
+    radial-gradient(ellipse at 85% 85%, #42304e, transparent 60%);
+}
+form {
+  width: min(400px, 90vw);
+  padding: 36px;
+  border: 1px solid #8298b5;
+  border-radius: 24px;
+  background: #131e30dd;
+  box-shadow: 0 24px 80px #0004;
+}
+.brand {
+  font-size: 52px;
+  font-weight: 850;
+  font-style: italic;
+  letter-spacing: 4px;
+  color: #c7eff5;
+}
+h1 {
+  font-size: 22px;
+  margin: 0 0 12px;
+}
+p {
+  color: #aabbd0;
+}
+label {
+  display: block;
+  margin: 24px 0;
+  font-size: 14px;
+}
+input {
+  display: block;
+  margin-top: 9px;
+  padding: 12px;
+  width: 100%;
+  font: inherit;
+  background: #0d1626;
+  border: 1px solid #5f728e;
+  border-radius: 9px;
+  color: #fff;
+}
+button {
+  font: inherit;
+  font-weight: 700;
+  padding: 12px;
+  width: 100%;
+  border: 1px solid #e0ffff;
+  border-radius: 9px;
+  background: linear-gradient(120deg, #a5f3fc, #c4b5fd);
+  color: #152238;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+}
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid #b1f4ff;
+  outline-offset: 3px;
+}
+#error {
+  color: #fda4af;
+  font-size: 13px;
+  min-height: 18px;
+}
+.otp-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.otp-row input {
+  min-width: 0;
+  flex: 1;
+}
+.otp-row button {
+  white-space: nowrap;
+  width: auto;
+  font-size: 13px;
+  padding: 12px;
+  margin: 0;
+}
+.price-note {
+  font-size: 12px !important;
+  line-height: 1.8 !important;
+  color: #9aacc4 !important;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

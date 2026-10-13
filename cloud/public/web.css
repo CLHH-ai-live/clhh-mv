@@ -1,0 +1,160 @@
+#web-files {
+  color: #e6eef8;
+  background: #172237;
+  border: 1px solid #92adc9;
+  border-radius: 16px;
+  width: min(900px, 90vw);
+  max-height: 88vh;
+  padding: 24px;
+}
+#web-files::backdrop {
+  background: #000b;
+}
+.web-files-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+#web-files h2 {
+  font-size: 22px;
+  font-weight: 700;
+}
+#web-files p {
+  color: #b8c5d8;
+  font-size: 14px;
+  margin: 12px 0;
+}
+.web-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 20px 0;
+}
+.web-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  background: #ffffff08;
+  border: 1px solid #ffffff1c;
+  border-radius: 12px;
+}
+.web-file-name {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.web-file-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+#web-files button,
+.web-download {
+  display: inline-block;
+  background: #c4d6f2;
+  color: #142033;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 14px;
+  white-space: nowrap;
+}
+#web-files button:hover,
+.web-download:hover {
+  background: #e1ebff;
+}
+#web-files button:focus-visible,
+.web-download:focus-visible {
+  outline: 2px solid #a5f3fc;
+  outline-offset: 3px;
+}
+.web-preview {
+  margin-top: 20px;
+}
+.web-preview h3 {
+  overflow-wrap: anywhere;
+  margin-bottom: 12px;
+}
+.web-preview video {
+  display: block;
+  width: 100%;
+  max-height: 48vh;
+  background: #000;
+  border-radius: 10px;
+}
+.web-preview [role="status"] {
+  color: #ffc9ba !important;
+}
+@media (max-width: 600px) {
+  #web-files {
+    padding: 16px;
+  }
+  .web-file-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+#web-wallet,
+#web-charge {
+  color: #e6eef8;
+  background: #172237;
+  border: 1px solid #92adc9;
+  border-radius: 16px;
+  width: min(760px, 92vw);
+  max-height: 88vh;
+  padding: 24px;
+}
+#web-wallet::backdrop,
+#web-charge::backdrop {
+  background: #000b;
+}
+#web-wallet h2,
+#web-charge h2 {
+  font-size: 22px;
+  font-weight: 700;
+}
+#web-wallet p,
+#web-charge p {
+  color: #b8c5d8;
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 14px 0;
+}
+#web-wallet button,
+#web-charge button {
+  background: #c4d6f2;
+  color: #142033;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+#web-wallet button:disabled {
+  opacity: 0.5;
+}
+.web-topup-amounts,
+.web-pending {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+.web-balance {
+  font-size: 20px !important;
+  color: #a5f3fc !important;
+}
+.web-payment img {
+  border-radius: 12px;
+}
+.web-ledger p {
+  font-size: 12px !important;
+  border-bottom: 1px solid #ffffff16;
+  padding-bottom: 10px;
+}
+#web-charge {
+  width: min(520px, 92vw);
+}

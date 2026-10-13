@@ -1,0 +1,10 @@
+.git
+node_modules
+.env*
+dist
+release*
+resources
+build
+cloud/.runtime
+cloud/.data
+cloud/.public-app

@@ -1,0 +1,37 @@
+[
+  {
+    "start": "async function ox(",
+    "end": "function lx(",
+    "file": "adapters/assets.js"
+  },
+  {
+    "start": "async function Yx(",
+    "end": "function sd(",
+    "file": "adapters/generate.js"
+  },
+  {
+    "start": "async function fm(",
+    "end": "class Ls",
+    "file": "adapters/merge.js"
+  },
+  {
+    "start": "async function bv(",
+    "end": "async function ha(",
+    "file": "adapters/probe.js"
+  },
+  {
+    "start": "async function Sv(",
+    "end": "const cr=",
+    "file": "adapters/trim.js"
+  },
+  {
+    "start": "function clhhHasVideo(",
+    "end": "function dd(",
+    "file": "adapters/result.js"
+  },
+  {
+    "start": "function dm(",
+    "end": "function Tx(",
+    "file": "adapters/segment.js"
+  }
+]

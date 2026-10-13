@@ -1,0 +1,28 @@
+services:
+  app:
+    image: clhh-mv:staging
+    container_name: clhh-mv-staging
+    ports:
+      - "127.0.0.1:4310:8080"
+    environment:
+      PUBLIC_ORIGIN: https://mv.staging.clhh.tech
+      TRUST_PROXY: "true"
+      MAX_RUNNING_JOBS: "2"
+      MAX_ACTIVE_ENGINES: "2"
+    volumes:
+      - ./data:/data
+    networks:
+      - clhh-shared
+    shm_size: 256mb
+    mem_limit: 2g
+    cpus: 2
+    pids_limit: 256
+    init: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+networks:
+  clhh-shared:
+    external: true
