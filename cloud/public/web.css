@@ -136,8 +136,7 @@
 #web-wallet button:disabled {
   opacity: 0.5;
 }
-.web-topup-amounts,
-.web-pending {
+.web-topup-amounts {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -158,3 +157,14 @@
 #web-charge {
   width: min(520px, 92vw);
 }
+
+.web-orders { display: grid; gap: 12px; }
+.web-order-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 18px; padding: 18px; border: 1px solid #62758f; border-radius: 12px; background: #111d30; }
+.web-order-row small { display: block; color: #aabbd0; margin-top: 6px; overflow-wrap: anywhere; }
+.web-order-status { padding: 6px 10px; border-radius: 8px; background: #394559; white-space: nowrap; }
+.web-order-status.paid { color: #9af0ba; background: #193e32; }
+.web-order-status.pending, .web-order-status.creating { color: #ffe1a0; background: #493c24; }
+.web-order-status.closed { color: #b8c1cf; }
+.web-order-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+#web-wallet .web-order-actions button { padding: 8px 12px; font-size: 14px; }
+@media (max-width: 650px) { .web-order-row { grid-template-columns: minmax(0,1fr) auto; } .web-order-actions { grid-column: 1 / -1; } }

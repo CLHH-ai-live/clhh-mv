@@ -25,7 +25,7 @@ export function installBilling(web) {
           ? "支付订单已关闭，请重新选择充值金额。"
           : "使用微信扫码充值 ¥" + (order.amountFen / 100).toFixed(2);
     region.append(title);
-    if (order.qrCode && order.status !== "paid") {
+    if (order.qrCode && order.status === "pending") {
       const image = document.createElement("img");
       image.src = order.qrCode;
       image.alt = "微信充值二维码";
@@ -61,24 +61,52 @@ export function installBilling(web) {
       rows.append(row);
     }
     const orders = await web.api("/api/billing/topups");
-    const pending = walletDialog.querySelector(".web-pending");
-    pending.replaceChildren();
-    for (const order of orders
-      .filter((o) => ["creating", "pending"].includes(o.status))
-      .slice(0, 5)) {
-      const button = document.createElement("button");
-      button.textContent = "继续充值 ¥" + (order.amountFen / 100).toFixed(2);
-      button.onclick = async () => {
-        try {
-          renderOrder(await web.api("/api/billing/topups/" + order.id));
-          pollOrder();
-        } catch (e) {
-          walletDialog.querySelector("[role=status]").textContent = e.message;
+    const list = walletDialog.querySelector(".web-orders");
+    list.replaceChildren();
+    const statuses = { paid: "已完成", closed: "已取消", pending: "待支付", creating: "待支付" };
+    if (!orders.length) list.textContent = "暂无充值账单";
+    for (const order of orders) {
+      const row = document.createElement("article");
+      row.className = "web-order-row";
+      row.dataset.orderId = order.id;
+      const info = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = "充值 ¥" + (order.amountFen / 100).toFixed(2);
+      const time = document.createElement("small");
+      time.textContent = new Date(order.createdAt).toLocaleString();
+      const id = document.createElement("small");
+      id.textContent = "订单号 " + order.id;
+      info.append(title, time, id);
+      const badge = document.createElement("span");
+      badge.className = "web-order-status " + order.status;
+      badge.textContent = statuses[order.status] || "处理中";
+      const actions = document.createElement("div");
+      actions.className = "web-order-actions";
+      if (["creating", "pending"].includes(order.status)) {
+        for (const [label, cancel] of [["查看付款码", false], ["取消订单", true]]) {
+          const button = document.createElement("button");
+          button.textContent = label;
+          button.onclick = async () => {
+            actions.querySelectorAll("button").forEach(b => b.disabled = true);
+            try {
+              const current = await web.api("/api/billing/topups/" + order.id + (cancel ? "/cancel" : ""), cancel ? { method: "POST", body: {} } : undefined);
+              if (!cancel || activeOrder?.id === current.id) renderOrder(current);
+              if (["paid", "closed"].includes(current.status)) requestIds.delete(current.amountFen);
+              await updateWallet();
+              pollOrder();
+            } catch (e) {
+              walletDialog.querySelector("[role=status]").textContent = e.message;
+              actions.querySelectorAll("button").forEach(b => b.disabled = false);
+            }
+          };
+          actions.append(button);
         }
-      };
-      pending.append(button);
+      }
+      row.append(info, badge, actions);
+      list.append(row);
     }
   }
+
   function pollOrder() {
     clearTimeout(pollTimer);
     if (
@@ -90,7 +118,7 @@ export function installBilling(web) {
     pollTimer = setTimeout(async () => {
       try {
         renderOrder(await web.api("/api/billing/topups/" + activeOrder.id));
-        if (activeOrder.status === "paid") await updateWallet();
+        if (["paid", "closed"].includes(activeOrder.status)) await updateWallet();
       } catch (error) {
         walletDialog.querySelector("[role=status]").textContent = error.message;
       }
@@ -103,7 +131,7 @@ export function installBilling(web) {
       walletDialog.id = "web-wallet";
       walletDialog.setAttribute("aria-label", "余额与充值");
       walletDialog.innerHTML =
-        '<div class="web-files-heading"><h2>余额与充值</h2><button class="web-close">关闭</button></div><p class="web-balance">加载中…</p><p>每 180 秒 ¥30，按实际音频时长折算。生成前预留费用，失败或取消自动退回余额；合并、预览和下载免费。余额保留精确账目，界面显示到分。</p><div class="web-topup-amounts"></div><p role="status" aria-live="polite"></p><div class="web-payment"></div><div class="web-pending"></div><h3>最近账单</h3><div class="web-ledger"></div>';
+        '<div class="web-files-heading"><h2>余额与充值</h2><button class="web-close">关闭</button></div><p class="web-balance">加载中…</p><p>每 180 秒 ¥30，按实际音频时长折算。生成前预留费用，失败或取消自动退回余额；合并、预览和下载免费。余额保留精确账目，界面显示到分。</p><div class="web-topup-amounts"></div><p role="status" aria-live="polite"></p><div class="web-payment"></div><h3>充值账单</h3><div class="web-orders"></div><h3>余额明细</h3><div class="web-ledger"></div>';
       walletDialog.querySelector(".web-close").onclick = () =>
         walletDialog.close();
       walletDialog.onclose = () => clearTimeout(pollTimer);
@@ -124,6 +152,7 @@ export function installBilling(web) {
               }),
             );
             status.textContent = "请使用微信扫一扫，支付后自动到账。";
+            await updateWallet();
             pollOrder();
           } catch (error) {
             status.textContent = error.message;
@@ -196,7 +225,7 @@ export function installBilling(web) {
     }
   }
   setInterval(() => {
-    if (!document.hidden) void web.refreshWallet().catch(() => {});
+    if (!document.hidden) void (walletDialog?.open ? updateWallet() : web.refreshWallet()).catch(() => {});
   }, 15000);
   setTimeout(() => void web.refreshWallet().catch(() => {}), 500);
 }

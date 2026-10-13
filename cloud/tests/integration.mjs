@@ -84,6 +84,7 @@ const fixture = http.createServer(async (req, res) => {
   }
   if (req.url.startsWith("/internal/payments/")) {
     const id = req.url.split("/")[3];
+    if (req.url.endsWith("/close")) mockPayments.get(id).status = "failed";
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify(mockPayments.get(id)));
     return;
@@ -470,6 +471,21 @@ try {
       await page
         .getByText("充值成功，余额已到账", { exact: true })
         .waitFor({ timeout: 15000 });
+      const completed = page.locator('.web-order-row').filter({ hasText: '充值 ¥0.01' });
+      await completed.getByText("已完成", { exact: true }).waitFor();
+      assert.equal(await page.getByRole("button", { name: /继续充值/ }).count(), 0);
+      assert.equal((await api("/api/billing/topups/" + fresh.businessOrderId + "/cancel", {})).status, "paid");
+      await page.getByRole("button", { name: "充值 ¥10", exact: true }).click();
+      const cancelled = page.locator('.web-order-row').filter({ hasText: '充值 ¥10.00' });
+      await cancelled.getByText("待支付", { exact: true }).waitFor();
+      await cancelled.getByRole("button", { name: "取消订单", exact: true }).click();
+      await cancelled.getByText("已取消", { exact: true }).waitFor();
+      assert.equal(await page.getByAltText("微信充值二维码").count(), 0);
+      const cancelledId = await cancelled.getAttribute("data-order-id");
+      const closed = await api("/api/billing/topups/" + cancelledId);
+      assert.equal(closed.status, "closed");
+      assert.equal(closed.qrCode, null);
+      assert.equal((await api("/api/billing/topups/" + cancelledId + "/cancel", {})).status, "closed");
       assert.deepEqual(errors, []);
       await page.screenshot({ path: path.join(temp, "wallet-browser.png") });
       const phoneContext = await browser.newContext();
@@ -487,6 +503,8 @@ try {
       assert.equal(phoneMe.email, null);
       const phoneWallet = await phonePage.evaluate(() => fetch("/api/billing/wallet").then(r => r.json()));
       assert.equal(phoneWallet.balanceUnits, 0);
+      const otherUserCancel = await phoneContext.request.post(origin + "/api/billing/topups/" + cancelledId + "/cancel", { headers: { origin, "x-csrf-token": phoneMe.csrf }, data: {} });
+      assert.equal(otherUserCancel.status(), 404);
       const otherUserMedia = await phoneContext.request.get(origin + "/api/download?path=" + encodeURIComponent(merged.relative));
       assert.notEqual(otherUserMedia.status(), 200);
       await phonePage.screenshot({ path: path.join(temp, "phone-browser.png") });

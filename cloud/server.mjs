@@ -81,7 +81,7 @@ for (const u of users) {
 }
 billing.reconcileJobs(jobs);
 async function paymentOrder(order) {
-  if (order.status === "paid") return order;
+  if (["paid", "closed"].includes(order.status)) return order;
   if (paymentFlights.has(order.id)) return paymentFlights.get(order.id);
   const task = (async () => {
     let current = order;
@@ -105,6 +105,35 @@ async function paymentOrder(order) {
   } finally {
     paymentFlights.delete(order.id);
   }
+}
+async function cancelPaymentOrder(order) {
+  if (paymentFlights.has(order.id)) {
+    await paymentFlights.get(order.id).catch(() => {});
+    return cancelPaymentOrder(billing.order(order.id));
+  }
+  if (["paid", "closed"].includes(order.status)) return order;
+  const task = (async () => {
+    if (order.paymentId) {
+      let payment = await payments.query(order.paymentId);
+      if (payment.status === "pending") {
+        try {
+          payment = await payments.request("POST", "/internal/payments/" + encodeURIComponent(order.paymentId) + "/close", {});
+        } catch (error) {
+          payment = await payments.query(order.paymentId);
+          if (payment.status === "pending") throw error;
+        }
+      }
+      if (payment.status === "success") {
+        billing.credit(payment, "query:" + payment.paymentId);
+        return billing.order(order.id);
+      }
+      if (payment.status !== "failed") throw new Error("订单状态更新中，请稍后重试");
+    }
+    billing.closeTopup(order.id);
+    return billing.order(order.id);
+  })();
+  paymentFlights.set(order.id, task);
+  try { return await task; } finally { paymentFlights.delete(order.id); }
 }
 async function publicOrder(order) {
   return {
@@ -610,6 +639,12 @@ const server = http.createServer(async (req, res) => {
           .limit(20)
           .all(),
       );
+    const cancelTopupRoute = /^\/api\/billing\/topups\/([0-9a-f-]{36})\/cancel$/.exec(url.pathname);
+    if (cancelTopupRoute && req.method === "POST") {
+      const order = billing.order(cancelTopupRoute[1], user.username);
+      if (!order) return json(res, 404, { error: "订单不存在" });
+      return json(res, 200, await publicOrder(await cancelPaymentOrder(order)));
+    }
     const topupRoute = /^\/api\/billing\/topups\/([0-9a-f-]{36})$/.exec(
       url.pathname,
     );
