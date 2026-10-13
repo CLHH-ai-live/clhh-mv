@@ -460,10 +460,10 @@ try {
         "RunCancelledError",
       );
       await page.getByTitle("余额与充值", { exact: true }).click();
-      await page.getByRole("button", { name: "充值 ¥10", exact: true }).click();
+      await page.getByRole("button", { name: "测试充值 ¥0.01", exact: true }).click();
       await page.getByAltText("微信充值二维码").waitFor();
       const fresh = [...mockPayments.values()].find(
-        (p) => p.amountFen === 1000,
+        (p) => p.amountFen === 1,
       );
       assert.ok(fresh);
       fresh.status = "success";

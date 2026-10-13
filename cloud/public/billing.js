@@ -107,9 +107,9 @@ export function installBilling(web) {
       walletDialog.querySelector(".web-close").onclick = () =>
         walletDialog.close();
       walletDialog.onclose = () => clearTimeout(pollTimer);
-      for (const amountFen of [1000, 3000, 5000, 10000, 30000]) {
+      for (const amountFen of [1, 1000, 3000, 5000, 10000, 30000]) {
         const button = document.createElement("button");
-        button.textContent = "充值 ¥" + amountFen / 100;
+        button.textContent = amountFen === 1 ? "测试充值 ¥0.01" : "充值 ¥" + amountFen / 100;
         button.onclick = async () => {
           const status = walletDialog.querySelector("[role=status]");
           button.disabled = true;

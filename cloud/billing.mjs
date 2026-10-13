@@ -170,7 +170,7 @@ export class Billing {
     }
   }
   createTopup(userId, amountFen, requestId) {
-    if (![1000, 3000, 5000, 10000, 30000].includes(amountFen))
+    if (![1, 1000, 3000, 5000, 10000, 30000].includes(amountFen))
       throw new Error("请选择有效的充值金额");
     if (!/^[a-zA-Z0-9_-]{16,80}$/.test(requestId))
       throw new Error("无效请求标识");

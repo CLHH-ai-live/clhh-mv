@@ -139,3 +139,16 @@ test("callback signatures bind the exact body, route and timestamp", () => {
     ),
   );
 });
+
+test("one-cent test payment credits exactly one cent once", () => {
+  const f = fixture();
+  try {
+    for (const amount of [0, -1, 0.01, 2])
+      assert.throws(() => f.billing.createTopup("alice", amount, crypto.randomUUID()));
+    const payment = pay(f.billing, "alice", 1);
+    f.billing.credit(payment, "repeated-one-cent-callback");
+    assert.equal(f.billing.wallet("alice").balanceUnits, 6);
+    assert.equal(yuan(f.billing.wallet("alice").balanceUnits), "0.01");
+    assert.equal(f.billing.wallet("bob").balanceUnits, 0);
+  } finally { f.close(); }
+});
