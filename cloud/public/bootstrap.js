@@ -410,7 +410,7 @@ async function pollJobs() {
         store.getState().updatePanel(panel.id, {
           isRunning: job.status === "running",
           isQueued: job.status === "queued",
-          statusText: job.progress?.stage || "生成中",
+          statusText: (job.progress?.detail ? `${job.progress.stage} · ${job.progress.detail}` : job.progress?.stage) || (job.status === "queued" ? "排队中" : "生成中"),
         });
       else if (
         job.status === "done" &&

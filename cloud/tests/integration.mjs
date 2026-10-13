@@ -414,6 +414,10 @@ try {
       // A second tab must render while its optional file listing is stalled.
       await page.evaluate(() => window.CLHH_WEB.storage.setItem("tab-test", "first"));
       const secondTab = await context.newPage();
+      await secondTab.route("**/assets/index.js", async route => {
+        const response = await route.fetch();
+        await route.fulfill({ response, body: (await response.text()) + "\nwindow.__testWorkbenchStore = ee;" });
+      });
       let releaseListing;
       const listingGate = new Promise(resolve => { releaseListing = resolve; });
       await secondTab.route("**/api/files", async route => {
@@ -424,6 +428,12 @@ try {
         await secondTab.goto(origin);
         await secondTab.getByTitle("我的视频", { exact: true }).waitFor({ timeout: 10000 });
         assert.equal(await secondTab.locator("#web-startup").count(), 0);
+        releaseListing();
+        const recoveredJobs = await api("/api/jobs");
+        const resumed = { ...recoveredJobs[0], status: "running", updated: Date.now() + 1000, progress: { stage: "执行中", detail: "状态 RUNNING（7/1200）" } };
+        await secondTab.route("**/api/jobs", route => route.fulfill({ contentType: "application/json", body: JSON.stringify([resumed]) }));
+        await secondTab.waitForFunction(() => window.__testWorkbenchStore.getState().panels.some(p => p.isRunning && p.statusText === "执行中 · 状态 RUNNING（7/1200）"), null, { timeout: 10000 });
+        await secondTab.unroute("**/api/jobs");
         assert.equal(await secondTab.evaluate(() => window.CLHH_WEB.storage.getItem("tab-test")), null);
         await secondTab.evaluate(() => window.CLHH_WEB.storage.setItem("tab-test", "second"));
         assert.equal(await page.evaluate(() => window.CLHH_WEB.storage.getItem("tab-test")), "first");

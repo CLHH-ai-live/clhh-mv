@@ -292,7 +292,7 @@ function state(user) {
       if (["queued", "running"].includes(job.status)) {
         p.isRunning = job.status === "running";
         p.isQueued = job.status === "queued";
-        p.statusText = job.progress?.stage || "生成中";
+        p.statusText = (job.progress?.detail ? `${job.progress.stage} · ${job.progress.detail}` : job.progress?.stage) || (job.status === "queued" ? "排队中" : "生成中");
       } else if (job.status === "done") {
         p.isRunning = false;
         p.isQueued = false;
